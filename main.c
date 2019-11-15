@@ -6,7 +6,7 @@ int main(int argc, char* argv[])
 {
     struct timeval start, end;
 
-    int niter = 100000;						//number of iterations per FOR loop
+    int iterations = 100000;						//number of iterations per FOR loop
     double x,y;							//x,y value for the random coordinate
     int i;								//loop counter
     int count=0;							//Count holds all the number of how many good coordinates
@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
 #pragma omp parallel firstprivate(x, y, z, i) reduction(+:count) num_threads(numthreads)
     {
         srand48((int)time(NULL) ^ omp_get_thread_num());	//Give random() a seed value
-        for (i=0; i<niter; ++i)					//main loop
+        for (i=0; i<iterations; ++i)					//main loop
         {
             x = (double)drand48();				//gets a random x coordinate
             y = (double)drand48();				//gets a random y coordinate
@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    pi = ((double)count/(double)(niter*numthreads))*4.0;
+    pi = ((double)count/(double)(iterations*numthreads))*4.0;
     printf("Actual PI: 3.1415926 \n");
     printf("Pi: %f\n", pi);
 
