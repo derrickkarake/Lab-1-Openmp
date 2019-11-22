@@ -1,37 +1,61 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <omp.h>
+#include <time.h>
+#include <sys/time.h>
 
-int main(int argc, char* argv[])
+double getRand(unsigned int *seed) {
+    return (double) rand_r(seed) * 2 / (double) (RAND_MAX) - 1;
+}
+
+long double Calculate_Pi_Sequential(long long number_of_tosses) {
+    long long number_in_circle = 0;
+    unsigned int seed = (unsigned int) time(NULL);
+    for (long long int toss = 0; toss < number_of_tosses; toss++) {
+        double x = getRand(&seed);
+        double y = getRand(&seed);
+        double distance_squared = x*x + y*y;
+        if (distance_squared <= 1) number_in_circle++;
+    }
+    return 4 * number_in_circle/((double) number_of_tosses);
+}
+
+long double Calculate_Pi_Parallel(long long number_of_tosses) {
+    long long number_in_circle = 0;
+#pragma omp parallel num_threads(20)
 {
-    struct timeval start, end;
-
-    int iterations = 100000;						//number of iterations per FOR loop
-    double x,y;							//x,y value for the random coordinate
-    int i;								//loop counter
-    int count=0;							//Count holds all the number of how many good coordinates
-    double z;							//Used to check if x^2+y^2<=1
-    double pi;							//holds approx value of pi
-    int numthreads = 16;
-
-#pragma omp parallel firstprivate(x, y, z, i) reduction(+:count) num_threads(numthreads)
-    {
-        srand48((int)time(NULL) ^ omp_get_thread_num());	//Give random() a seed value
-        for (i=0; i<iterations; ++i)					//main loop
-        {
-            x = (double)drand48();				//gets a random x coordinate
-            y = (double)drand48();				//gets a random y coordinate
-            z = ((x*x)+(y*y));				//Checks to see if number is inside unit circle
-            if (z<=1)
-            {
-                ++count;				//if it is, consider it a valid random point
-            }
+    unsigned int seed = (unsigned int) time(NULL) + (unsigned int) omp_get_thread_num();
+    #pragma omp for reduction(+: number_in_circle)
+        for (long long int toss = 0; toss < number_of_tosses; toss++) {
+            double x = getRand(&seed);
+            double y = getRand(&seed);
+            double distance_squared = x*x + y*y;
+            if (distance_squared <= 1) number_in_circle++;
         }
     }
+    return 4 * number_in_circle/((double) number_of_tosses);
+}
 
-    pi = ((double)count/(double)(iterations*numthreads))*4.0;
-    printf("Actual PI: 3.1415926 \n");
-    printf("Pi: %f\n", pi);
+int main() {
+    struct timeval start, end;
+
+    long long num_tosses = 10000000;
+
+    printf("Timing sequential...\n");
+    gettimeofday(&start, NULL);
+    long double sequential_pi = Calculate_Pi_Sequential(num_tosses);
+    gettimeofday(&end, NULL);
+    printf("Took %f seconds\n\n", end.tv_sec - start.tv_sec + (double) (end.tv_usec - start.tv_usec) / 1000000);
+
+    printf("Timing parallel...\n");
+    gettimeofday(&start, NULL);
+    long double parallel_pi = Calculate_Pi_Parallel(num_tosses);
+    gettimeofday(&end, NULL);
+    printf("Took %f seconds\n\n", end.tv_sec - start.tv_sec + (double) (end.tv_usec - start.tv_usec) / 1000000);
+
+    // This will print the result to 10 decimal places
+    printf("π = %.10Lf (sequential)\n", sequential_pi);
+    printf("π = %.10Lf (parallel)\n", parallel_pi);
 
     return 0;
 }
