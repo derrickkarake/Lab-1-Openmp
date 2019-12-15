@@ -23,19 +23,19 @@ long double Calculate_Pi_Sequential(long long number_of_tosses) {
 
 long double Calculate_Pi_Parallel(long long number_of_tosses) {             //holds the number of tosses 
     long long number_in_circle = 0;                                         //holds the number of point in the cirlce
-#pragma omp parallel num_threads(20) //sets number of threads to 20
+#pragma omp parallel num_threads(20) //number of threads to 20
 {
     unsigned int seed = (unsigned int) time(NULL) + (unsigned int) omp_get_thread_num();
     #pragma omp for reduction(+: number_in_circle)              //summing with the reduction clause and saving it number_in_cicle
      // generates random x,y cordinates for every toss
         for (long long int toss = 0; toss < number_of_tosses; toss++) {
-            double x = getRand(&seed);                            //generates random points
+            double x = getRand(&seed);                            
             double y = getRand(&seed);
             double distance_squared = x*x + y*y;
-            if (distance_squared <= 1) number_in_circle++;         //increameants numbers_in_cicle when disance squared is less than 1(when in the cicle
+            if (distance_squared <= 1) number_in_circle++;         //increameants numbers_in_cicle when disance squared is less than 1(when in the cicle)
         }
     }
-    return 4 * number_in_circle/((double) number_of_tosses);     //returns an estimated value of pi using 
+    return 4 * number_in_circle/((double) number_of_tosses);     //returns an estimated value of pi
 }
 
 int main() {
